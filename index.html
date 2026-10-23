@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WE Workspace - Advanced Display Monitor Edition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK v9 Module Initialization -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            onSnapshot, 
+            doc, 
+            updateDoc, 
+            deleteDoc, 
+            getDocs, 
+            query, 
+            orderBy, 
+            writeBatch 
+        } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firebase-app.js"; // Standard Firebase SDK
+
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.fs = {
+            collection,
+            addDoc,
+            onSnapshot,
+            doc,
+            updateDoc,
+            deleteDoc,
+            getDocs,
+            query,
+            orderBy,
+            writeBatch
+        };
+    </script>
+
+    <style>
+        :root {
+            --we-purple: #4e2683;
+            --we-purple-hover: #3d1c68;
+            --we-glow: rgba(78, 38, 131, 0.4);
+            --we-neon-glow: 0 0 15px rgba(120, 46, 212, 0.4);
+            --bg-dark: #121212;
+            --panel-bg: #1e1e1f;
+            --border-color: #2f2f2f;
+            --text-light: #e3e3e3;
+            --accent-green: #2ecc71;
+            --accent-blue: #3498db;
+            --accent-red: #e74c3c;
+            --modal-bg: #0f172a; /* الداكن الفخم كما في الصور */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            user-select: none;
+        }
+
+        /* شريط علوي */
+        .sheets-top-bar {
+            background-color: #1f1f1f;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .top-left-section {
+            display: flex;
+            align-items: center;
+        }
+
+        .we-logo-container {
+            width: 36px;
+            height: 36px;
+            background-color: var(--we-purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            box-shadow: 0 0 10px var(--we-glow);
+        }
+        .we-logo-text {
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            letter-spacing: -1px;
+        }
+
+        .sheets-title {
+            font-size: 16px;
+            color: #e3e3e3;
+            font-weight: 500;
+        }
+
+        .adsl-status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #121212;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        /* شريط الأدوات */
+        .sheets-toolbar {
+            background-color: #1e1e1f;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+        .toolbar-btn {
+            background: none;
+            border: none;
+            color: #e3e3e3;
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            gap: 4px;
+        }
+        .toolbar-btn:hover { background-color: #2d2e30; }
+        
+        .btn-reset-session {
+            background-color: var(--accent-red);
+            color: white;
+            font-weight: bold;
+        }
+        .btn-reset-session:hover { background-color: #c0392b; }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 18px;
+            background-color: #444746;
+            margin: 0 4px;
+        }
+
+        /* التخطيط الرئيسي */
+        .main-layout {
+            max-width: 1600px;
+            margin: 20px auto;
+            padding: 0 15px;
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 20px;
+        }
+
+        @media (max-width: 1100px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+
+        .workspace-area {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .excel-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .panel-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .excel-panel select, .excel-panel input[type="text"] {
+            background-color: #2d2e30;
+            border: 1px solid #444746;
+            color: #fff;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .btn-we-apply {
+            background-color: var(--we-purple);
+            color: white;
+            border: none;
+            padding: 7px 20px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-we-apply:hover { background-color: var(--we-purple-hover); }
+
+        .button-group-right {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+        .btn-success-action {
+            background-color: #1b6334;
+            border: none;
+            color: white;
+            padding: 7px 14px;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-success-action:hover { background-color: #237a41; }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #80868b;
+            padding: 4px 2px;
+        }
+
+        /* Monitor Display Sidebar */
+        .history-sidebar {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            height: 650px;
+            position: relative;
+        }
+        
+        .sidebar-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .sidebar-title {
+            font-size: 15px;
+            color: #fff;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .btn-monitor-save {
+            background-color: var(--we-purple);
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+        .btn-monitor-save:hover { background-color: var(--we-purple-hover); }
+
+        .save-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 28px;
+            right: 0;
+            background-color: #28282a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 100;
+            width: 170px;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .save-dropdown-menu.show { display: flex; }
+        .dropdown-item {
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #e3e3e3;
+            background: none;
+            border: none;
+            text-align: right;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            direction: rtl;
+        }
+        .dropdown-item:hover { background-color: #38383b; color: #fff; }
+
+        .monitor-search-box {
+            display: flex;
+            align-items: center;
+            background-color: #121212;
+            border: 1px solid #444746;
+            border-radius: 6px;
+            padding: 6px 12px;
+            gap: 8px;
+            transition: border-color 0.2s;
+        }
+        .monitor-search-box:focus-within { border-color: var(--we-purple); }
+        .monitor-search-input {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 12px;
+            width: 100%;
+            outline: none;
+        }
+
+        .display-monitor-screen {
+            background-color: #0c0c0d;
+            border: 2px solid var(--we-purple);
+            border-radius: 8px;
+            padding: 12px;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: var(--we-neon-glow), inset 0 0 15px rgba(0,0,0,0.9);
+            position: relative;
+        }
+        
+        .history-card {
+            background-color: #171718;
+            border: 1px solid #2d2e30;
+            padding: 10px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: all 0.2s;
+            direction: rtl;
+            z-index: 3;
+        }
+        .history-card:hover {
+            border-color: #782ed4;
+            background-color: #1c1526;
+            box-shadow: 0 0 8px rgba(120, 46, 212, 0.2);
+        }
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #80868b;
+        }
+        .history-title {
+            color: #fff;
+            font-weight: bold;
+            font-size: 12px;
+            outline: none;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-title[contenteditable="true"] {
+            background-color: #0c0c0d;
+            border: 1px solid var(--we-purple);
+        }
+        .history-text {
+            color: #c4c7c5;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            outline: none;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-text[contenteditable="true"] {
+            background-color: #0c0c0d;
+            border: 1px solid var(--we-purple);
+            max-height: none;
+            overflow: visible;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+            border-top: 1px solid #2a2a2b;
+            padding-top: 6px;
+            justify-content: flex-start;
+            direction: ltr;
+        }
+        .card-btn {
+            background: none;
+            border: none;
+            color: #a3a3a3;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .card-btn:hover { background-color: #2d2e30; color: #fff; }
+        .card-btn.push-in { color: var(--accent-blue); }
+        .card-btn.push-out { color: var(--accent-green); }
+        .card-btn.delete { color: #e74c3c; }
+        .card-btn.edit { color: #f1c40f; }
+
+        .io-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .box-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 180px;
+            box-sizing: border-box;
+            background-color: #121212;
+            border: 1px solid var(--border-color);
+            color: #e3e3e3;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 14px;
+            outline: none;
+        }
+        .output-box { background-color: #0d0d0e; color: #bfa1f3; }
+        .dynamic-field { display: none; }
+        .show-field { display: flex; }
+
+        .box-actions { display: flex; gap: 8px; }
+        .action-icon-btn {
+            background: none;
+            border: 1px solid #444746;
+            color: #e3e3e3;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .action-icon-btn:hover { background-color: #2d2e30; }
+
+        /* --- تصميم القوائم المنبثقة (Modal Popups) المطابقة للصورة --- */
+        .custom-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .custom-modal-overlay.active { display: flex; }
+
+        .custom-modal-card {
+            background-color: #070b14; /* درجة الداكن المائل للأزرق العميق من الصورة */
+            border: 1px solid #1e293b;
+            border-radius: 20px;
+            width: 320px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            direction: rtl;
+        }
+
+        .modal-title-red {
+            color: #ff3b30; /* اللون البرتقالي/الاحمر الفاقع مثل خيارات التصدير بالصورة */
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            text-align: right;
+        }
+
+        .modal-btn-option {
+            background-color: #0f172a;
+            border: 1px solid #1e293b;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 14px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+        .modal-btn-option:hover {
+            background-color: #1e293b;
+            border-color: #334155;
+            transform: translateY(-1px);
+        }
+
+        .modal-btn-close {
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- شريط علوي -->
+<div class="sheets-top-bar">
+    <div class="top-left-section">
+        <div class="we-logo-container"><span class="we-logo-text">we</span></div>
+        <div class="sheets-title-container">
+            <span class="sheets-title">WE Advanced Workspace - Smart Display Hub</span>
+        </div>
+    </div>
+    
+    <div class="adsl-status-badge">
+        <div class="status-dot"></div>
+        <span>ADSL Concession Status: <b>Active</b></span>
+    </div>
+</div>
+
+<!-- شريط الأدوات -->
+<div class="sheets-toolbar">
+    <button id="tb-reset-all" class="toolbar-btn btn-reset-session" title="Clear IN and OUT to start new customer session">
+        <i class="fa-solid fa-arrows-rotate"></i> Clear IN/OUT (New Customer)
+    </button>
+    <div class="toolbar-divider"></div>
+    <button id="tb-undo" class="toolbar-btn" title="Undo"><i class="fa-solid fa-rotate-left"></i> Undo</button>
+    <button id="tb-redo" class="toolbar-btn" title="Redo"><i class="fa-solid fa-rotate-right"></i> Redo</button>
+    <div class="toolbar-divider"></div>
+    <button id="font-decrease" class="toolbar-btn" title="Decrease Font Size"><i class="fa-solid fa-minus"></i></button>
+    <span style="font-size: 13px; padding: 0 4px;" id="font-size-indicator">14px</span>
+    <button id="font-increase" class="toolbar-btn" title="Increase Font Size"><i class="fa-solid fa-plus"></i></button>
+    <div class="toolbar-divider"></div>
+    <button id="btn-trim-spaces" class="toolbar-btn" title="Trim Spaces"><i class="fa-solid fa-align-center"></i> Trim Spaces</button>
+    <button id="btn-uppercase" class="toolbar-btn" title="UPPERCASE"><i class="fa-solid fa-font"></i> UPPER</button>
+    <button id="btn-lowercase" class="toolbar-btn" title="lowercase"><i class="fa-solid fa-font"></i> lower</button>
+    <button id="btn-titlecase" class="toolbar-btn" title="Title Case"><i class="fa-solid fa-heading"></i> Capitalize</button>
+    <div class="toolbar-divider"></div>
+
+    <!-- استدعينا هنا Modal الاستيراد والتصدير مباشرة -->
+    <button id="btn-trigger-import" class="toolbar-btn" title="Import Text File"><i class="fa-solid fa-file-import"></i> Import</button>
+    <button id="btn-trigger-export" class="toolbar-btn" title="Export Options"><i class="fa-solid fa-file-lines" style="color:#3498db;"></i> Export</button>
+    <input type="file" id="hidden-file-input" accept=".txt,.csv,.json" style="display: none;">
+</div>
+
+<!-- التخطيط الرئيسي -->
+<div class="main-layout">
+    <div class="workspace-area">
+        <div class="excel-panel">
+            <div class="panel-group">
+                <label>Data Action:</label>
+                <select id="excel-feature">
+                    <option value="none">Quick Tools...</option>
+                    <option value="replace">Find & Replace</option>
+                    <option value="remove-duplicates">Remove Duplicates</option>
+                    <option value="remove-empty">Remove Empty Lines</option>
+                    <option value="sort-asc">Sort A-Z (Ascending)</option>
+                    <option value="sort-desc">Sort Z-A (Descending)</option>
+                    <option value="extract-phones">Extract Phone Numbers</option>
+                    <option value="add-prefix-suffix">Add Prefix / Suffix</option>
+                    <option value="split-by-delimiter">Split by Delimiter</option>
+                    <option value="filter-contains">Filter Lines Containing...</option>
+                    <option value="calc-sum">Calculate Numbers (Sum/Avg/Max)</option>
+                </select>
+            </div>
+
+            <div id="find-container" class="panel-group dynamic-field">
+                <input type="text" id="find-text" placeholder="Find pattern...">
+                <input type="text" id="replace-text" placeholder="Replace with...">
+            </div>
+
+            <div id="prefix-container" class="panel-group dynamic-field">
+                <input type="text" id="prefix-text" placeholder="Prefix (Before)...">
+                <input type="text" id="suffix-text" placeholder="Suffix (After)...">
+            </div>
+
+            <div id="delimiter-container" class="panel-group dynamic-field">
+                <input type="text" id="delimiter-text" placeholder="Delimiter (e.g. , or |)">
+            </div>
+
+            <div id="filter-container" class="panel-group dynamic-field">
+                <input type="text" id="filter-text" placeholder="Line must contain...">
+            </div>
+
+            <button id="btn-apply" class="btn-we-apply">Run Action</button>
+            
+            <div class="button-group-right">
+                <button id="btn-save-input" class="btn-success-action"><i class="fa-solid fa-bookmark"></i> Save Input</button>
+                <button id="btn-save-output" class="btn-success-action" style="background-color: var(--we-purple);"><i class="fa-solid fa-box-archive"></i> Save Output</button>
+            </div>
+        </div>
+
+        <div class="io-container">
+            <div class="box-wrapper">
+                <div class="box-header">
+                    <span style="font-size:12px; color:#80868b; font-weight:bold;">INPUT CANVASES (IN)</span>
+                    <div class="box-actions">
+                        <button class="action-icon-btn" id="btn-copy-input"><i class="fa-solid fa-copy"></i> Copy</button>
+                        <button class="action-icon-btn" id="btn-clear-input" style="color:#e74c3c;"><i class="fa-solid fa-eraser"></i> Clear IN</button>
+                    </div>
+                </div>
+                <textarea id="input-data" placeholder="ادخل النصوص المراد معالجتها، أو احفظ المحتويات لتشاهدها في شاشة العرض الجانبية..."></textarea>
+                <div class="stats-bar">
+                    <span id="input-stats">Lines: 0 | Words: 0 | Chars: 0</span>
+                </div>
+            </div>
+            
+            <div class="box-wrapper">
+                <div class="box-header">
+                    <span style="font-size:12px; color:#80868b; font-weight:bold;">FINAL PROCESSED OUTPUT (OUT)</span>
+                    <div class="box-actions">
+                        <button class="action-icon-btn" id="btn-copy-output"><i class="fa-solid fa-copy"></i> Copy</button>
+                        <button class="action-icon-btn" id="btn-clear-output" style="color:#e74c3c;"><i class="fa-solid fa-eraser"></i> Clear OUT</button>
+                    </div>
+                </div>
+                <textarea id="output-data" class="output-box" readonly placeholder="المخرجات المعالجة..."></textarea>
+                <div class="stats-bar">
+                    <span id="output-stats">Lines: 0 | Words: 0 | Chars: 0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monitor Display Sidebar -->
+    <div class="history-sidebar">
+        <div class="sidebar-header-row">
+            <span class="sidebar-title">
+                <i class="fa-solid fa-desktop" style="color: #782ed4;"></i> Monitor Display
+            </span>
+            <div class="header-actions">
+                <button id="btn-monitor-save-toggle" class="btn-monitor-save" title="حفظ وتصدير بيانات الشاشة">
+                    <i class="fa-solid fa-floppy-disk"></i> حفظ <i class="fa-solid fa-caret-down"></i>
+                </button>
+                <div id="save-dropdown-menu" class="save-dropdown-menu">
+                    <button class="dropdown-item" id="opt-open-export-modal"><i class="fa-solid fa-sliders" style="color:#ff3b30"></i> فتح خيارات التصدير...</button>
+                    <button class="dropdown-item" id="opt-copy-all"><i class="fa-solid fa-copy" style="color:#9b59b6"></i> نسخ كافة النصوص</button>
+                </div>
+
+                <button id="btn-clear-all-history" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:11px;" title="Delete All"><i class="fa-solid fa-dumpster"></i> Clear All</button>
+            </div>
+        </div>
+
+        <div class="monitor-search-box">
+            <i class="fa-solid fa-magnifying-glass" style="color: #782ed4; font-size: 13px;"></i>
+            <input type="text" id="monitor-search-input" class="monitor-search-input" placeholder="البحث داخل شاشة المحفوظات والداخليات...">
+        </div>
+        
+        <div class="display-monitor-screen" id="history-list"></div>
+    </div>
+</div>
+
+<!-- ==================== النافذة المنبثقة: خيارات التصدير (طَبق الألوان والتصميم بالصورة) ==================== -->
+<div class="custom-modal-overlay" id="modal-export">
+    <div class="custom-modal-card">
+        <div class="modal-title-red">خيارات التصدير</div>
+        
+        <button class="modal-btn-option" id="modal-exp-json">JSON (Full Backup)</button>
+        <button class="modal-btn-option" id="modal-exp-beeftext">Beeftext (Combo)</button>
+        <button class="modal-btn-option" id="modal-exp-txt">Text (Readable)</button>
+        <button class="modal-btn-option" id="modal-exp-csv">Excel (CSV)</button>
+
+        <button class="modal-btn-option modal-btn-close" id="modal-exp-close">Close</button>
+    </div>
+</div>
+
+<!-- ==================== النافذة المنبثقة: خيارات الاستيراد (طَبق الألوان والتصميم بالصورة) ==================== -->
+<div class="custom-modal-overlay" id="modal-import">
+    <div class="custom-modal-card">
+        <div class="modal-title-red">خيارات التصدير</div> <!-- نفس عنوان الصورة المقدمة -->
+        
+        <button class="modal-btn-option" id="modal-imp-choose">Choose File 📁</button>
+        <button class="modal-btn-option modal-btn-close" id="modal-imp-close">Close</button>
+    </div>
+</div>
+
+<script>
+    const inputData = document.getElementById('input-data');
+    const outputData = document.getElementById('output-data');
+    const excelFeature = document.getElementById('excel-feature');
+    
+    const findContainer = document.getElementById('find-container');
+    const findText = document.getElementById('find-text');
+    const replaceText = document.getElementById('replace-text');
+    const prefixContainer = document.getElementById('prefix-container');
+    const delimiterContainer = document.getElementById('delimiter-container');
+    const filterContainer = document.getElementById('filter-container');
+
+    const btnApply = document.getElementById('btn-apply');
+    const btnSaveInput = document.getElementById('btn-save-input');
+    const btnSaveOutput = document.getElementById('btn-save-output');
+    const btnClearAllHistory = document.getElementById('btn-clear-all-history');
+    const historyList = document.getElementById('history-list');
+    const monitorSearchInput = document.getElementById('monitor-search-input');
+
+    const btnSaveToggle = document.getElementById('btn-monitor-save-toggle');
+    const saveDropdownMenu = document.getElementById('save-dropdown-menu');
+
+    let savedChats = [];
+    let historyStack = [];
+    let redoStack = [];
+    let currentFontSize = 14;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const checkFirebaseInterval = setInterval(() => {
+            if (window.db && window.fs) {
+                clearInterval(checkFirebaseInterval);
+                initFirestoreListener();
+            }
+        }, 100);
+    });
+
+    function initFirestoreListener() {
+        const { collection, onSnapshot, query, orderBy } = window.fs;
+        const chatsRef = collection(window.db, "savedChatsWorkspace");
+        const q = query(chatsRef, orderBy("createdAt", "desc"));
+
+        onSnapshot(q, (snapshot) => {
+            savedChats = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            renderHistory(monitorSearchInput.value);
+        }, (error) => {
+            console.error("Firestore Listener Error: ", error);
+        });
+    }
+
+    function pushToHistory() {
+        historyStack.push({ input: inputData.value, output: outputData.value });
+        if (historyStack.length > 20) historyStack.shift();
+    }
+
+    function clearInAndOut() {
+        pushToHistory();
+        inputData.value = '';
+        outputData.value = '';
+        updateStats();
+    }
+
+    document.getElementById('tb-reset-all').addEventListener('click', clearInAndOut);
+
+    function updateStats() {
+        const inVal = inputData.value;
+        const inLines = inVal ? inVal.split('\n').length : 0;
+        const inWords = inVal.trim() ? inVal.trim().split(/\s+/).length : 0;
+        document.getElementById('input-stats').innerText = `Lines: ${inLines} | Words: ${inWords} | Chars: ${inVal.length}`;
+
+        const outVal = outputData.value;
+        const outLines = outVal ? outVal.split('\n').length : 0;
+        const outWords = outVal.trim() ? outVal.trim().split(/\s+/).length : 0;
+        document.getElementById('output-stats').innerText = `Lines: ${outLines} | Words: ${outWords} | Chars: ${outVal.length}`;
+    }
+
+    inputData.addEventListener('input', updateStats);
+
+    btnSaveInput.addEventListener('click', () => {
+        if(!inputData.value.trim()) return;
+        addNoteToHistory("مدخلات محفوظة", inputData.value);
+    });
+
+    btnSaveOutput.addEventListener('click', () => {
+        if(!outputData.value.trim()) return;
+        addNoteToHistory("مخرجات محفوظة", outputData.value);
+    });
+
+    async function addNoteToHistory(defaultTitle, textContent) {
+        if (!window.db) return alert("جاري الاتصال بقاعدة البيانات...");
+        const timestamp = new Date().toLocaleString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+        
+        try {
+            const { collection, addDoc } = window.fs;
+            await addDoc(collection(window.db, "savedChatsWorkspace"), {
+                title: defaultTitle,
+                text: textContent,
+                time: timestamp,
+                createdAt: Date.now()
+            });
+        } catch (e) {
+            console.error("Error adding document: ", e);
+        }
+    }
+
+    function renderHistory(filterQuery = '') {
+        historyList.innerHTML = '';
+        
+        const filteredChats = savedChats.filter(chat => 
+            (chat.title && chat.title.toLowerCase().includes(filterQuery.toLowerCase())) || 
+            (chat.text && chat.text.toLowerCase().includes(filterQuery.toLowerCase()))
+        );
+
+        if(filteredChats.length === 0) {
+            historyList.innerHTML = `<p style="text-align:center; font-size:12px; color:#80868b; margin-top:40px; font-style:italic;">No saved records inside monitor screen.</p>`;
+            return;
+        }
+
+        filteredChats.forEach(chat => {
+            const card = document.createElement('div');
+            card.className = 'history-card';
+            card.setAttribute('data-id', chat.id);
+
+            card.innerHTML = `
+                <div class="history-meta">
+                    <span>${chat.time || ''}</span>
+                    <div class="history-title" contenteditable="false">${chat.title || ''}</div>
+                </div>
+                <div class="history-text" contenteditable="false">${chat.text || ''}</div>
+                <div class="card-actions">
+                    <button class="card-btn push-in" title="To Input"><i class="fa-solid fa-sign-in-alt"></i> To Input</button>
+                    <button class="card-btn push-out" title="To Output"><i class="fa-solid fa-sign-out-alt"></i> To Output</button>
+                    <button class="card-btn edit" title="Edit text"><i class="fa-solid fa-pen"></i> Edit</button>
+                    <button class="card-btn delete" title="Delete"><i class="fa-solid fa-trash"></i> Delete</button>
+                </div>
+            `;
+
+            card.querySelector('.push-in').addEventListener('click', () => {
+                pushToHistory();
+                inputData.value = chat.text;
+                updateStats();
+            });
+
+            card.querySelector('.push-out').addEventListener('click', () => {
+                pushToHistory();
+                outputData.value = chat.text;
+                updateStats();
+            });
+
+            card.querySelector('.delete').addEventListener('click', async () => {
+                try {
+                    const { doc, deleteDoc } = window.fs;
+                    await deleteDoc(doc(window.db, "savedChatsWorkspace", chat.id));
+                } catch (e) { console.error(e); }
+            });
+
+            const editBtn = card.querySelector('.edit');
+            const titleElement = card.querySelector('.history-title');
+            const textElement = card.querySelector('.history-text');
+
+            editBtn.addEventListener('click', async () => {
+                const isEditing = titleElement.getAttribute('contenteditable') === 'true';
+                
+                if(!isEditing) {
+                    titleElement.setAttribute('contenteditable', 'true');
+                    textElement.setAttribute('contenteditable', 'true');
+                    titleElement.focus();
+                    editBtn.innerHTML = `<i class="fa-solid fa-floppy-disk" style="color:var(--accent-green)"></i> Save`;
+                } else {
+                    titleElement.setAttribute('contenteditable', 'false');
+                    textElement.setAttribute('contenteditable', 'false');
+                    editBtn.innerHTML = `<i class="fa-solid fa-pen"></i> Edit`;
+                    
+                    try {
+                        const { doc, updateDoc } = window.fs;
+                        const docRef = doc(window.db, "savedChatsWorkspace", chat.id);
+                        await updateDoc(docRef, {
+                            title: titleElement.innerText.trim(),
+                            text: textElement.innerText.trim()
+                        });
+                    } catch (e) { console.error(e); }
+                }
+            });
+
+            historyList.appendChild(card);
+        });
+    }
+
+    // --- التحكم بالـ Modals (الظهور والإخفاء) ---
+    const modalExport = document.getElementById('modal-export');
+    const modalImport = document.getElementById('modal-import');
+    const hiddenFileInput = document.getElementById('hidden-file-input');
+
+    document.getElementById('btn-trigger-export').addEventListener('click', () => modalExport.classList.add('active'));
+    document.getElementById('opt-open-export-modal').addEventListener('click', () => {
+        saveDropdownMenu.classList.remove('show');
+        modalExport.classList.add('active');
+    });
+    document.getElementById('modal-exp-close').addEventListener('click', () => modalExport.classList.remove('active'));
+
+    document.getElementById('btn-trigger-import').addEventListener('click', () => modalImport.classList.add('active'));
+    document.getElementById('modal-imp-close').addEventListener('click', () => modalImport.classList.remove('active'));
+
+    document.getElementById('modal-imp-choose').addEventListener('click', () => {
+        modalImport.classList.remove('active');
+        hiddenFileInput.click();
+    });
+
+    // --- تشغيل التصدير من خيارات النوافذ ---
+    // 1. JSON
+    document.getElementById('modal-exp-json').addEventListener('click', () => {
+        const textToUse = savedChats.length ? savedChats : (outputData.value || inputData.value);
+        if (!textToUse) return alert('لا يوجد نص لتصديره.');
+        downloadFile(JSON.stringify(textToUse, null, 2), `Backup_${Date.now()}.json`, 'application/json');
+        modalExport.classList.remove('active');
+    });
+
+    // 2. Beeftext (Combo)
+    document.getElementById('modal-exp-beeftext').addEventListener('click', () => {
+        const sourceData = savedChats.length > 0 ? savedChats : [{ title: "Snippet", text: outputData.value || inputData.value }];
+        const beeftextData = {
+            fileVersion: 1,
+            combos: sourceData.map((item, idx) => ({
+                uuid: `beef-${Date.now()}-${idx}`,
+                name: item.title || "Untitled Snippet",
+                keyword: `!we${idx + 1}`,
+                snippet: item.text || "",
+                description: `Created on WE Workspace (${item.time || ''})`
+            }))
+        };
+        downloadFile(JSON.stringify(beeftextData, null, 2), `Beeftext_Combos_${Date.now()}.json`, 'application/json');
+        modalExport.classList.remove('active');
+    });
+
+    // 3. Text (Readable)
+    document.getElementById('modal-exp-txt').addEventListener('click', () => {
+        let text = "";
+        if(savedChats.length > 0) {
+            savedChats.forEach((item, idx) => {
+                text += `[${idx + 1}] ${item.title} (${item.time})\n${item.text}\n----------------------------------------\n\n`;
+            });
+        } else {
+            text = outputData.value || inputData.value;
+        }
+        if (!text) return alert('لا يوجد نص لتصديره.');
+        downloadFile(text, `WE_Export_${Date.now()}.txt`, 'text/plain');
+        modalExport.classList.remove('active');
+    });
+
+    // 4. Excel (CSV)
+    document.getElementById('modal-exp-csv').addEventListener('click', () => {
+        let csv = "\ufeffTitle,Time,Content\n";
+        if(savedChats.length > 0) {
+            savedChats.forEach(item => {
+                csv += `"${(item.title||'').replace(/"/g,'""')}","${(item.time||'').replace(/"/g,'""')}","${(item.text||'').replace(/"/g,'""')}"\n`;
+            });
+        } else {
+            csv += `"Export","","${(outputData.value || inputData.value).replace(/"/g,'""')}"\n`;
+        }
+        downloadFile(csv, `WE_Export_${Date.now()}.csv`, 'text/csv');
+        modalExport.classList.remove('active');
+    });
+
+    function downloadFile(content, fileName, mimeType) {
+        const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+    }
+
+    // Dropdown list handler
+    btnSaveToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveDropdownMenu.classList.toggle('show');
+    });
+    document.addEventListener('click', () => saveDropdownMenu.classList.remove('show'));
+
+    document.getElementById('opt-copy-all').addEventListener('click', () => {
+        if(savedChats.length === 0) return alert('لا توجد بيانات مجهزة للنسخ.');
+        let allTexts = savedChats.map(item => `[${item.title}] - ${item.time}:\n${item.text}`).join('\n\n---\n\n');
+        navigator.clipboard.writeText(allTexts).then(() => alert('تم نسخ جميع البيانات بنجاح!'));
+    });
+
+    monitorSearchInput.addEventListener('input', function() { renderHistory(this.value); });
+
+    btnClearAllHistory.addEventListener('click', async () => {
+        if(confirm("هل أنت متأكد من تفريغ كافة البيانات من السحابة؟")) {
+            try {
+                const { collection, getDocs, writeBatch } = window.fs;
+                const querySnapshot = await getDocs(collection(window.db, "savedChatsWorkspace"));
+                const batch = writeBatch(window.db);
+                querySnapshot.forEach(docSnap => batch.delete(docSnap.ref));
+                await batch.commit();
+            } catch (e) { console.error(e); }
+        }
+    });
+
+    // النص والعمليات
+    document.getElementById('btn-trim-spaces').addEventListener('click', () => {
+        pushToHistory();
+        inputData.value = inputData.value.replace(/[ \t]+/g, ' ').trim();
+        updateStats();
+    });
+
+    document.getElementById('btn-uppercase').addEventListener('click', () => {
+        pushToHistory();
+        inputData.value = inputData.value.toUpperCase();
+        updateStats();
+    });
+
+    document.getElementById('btn-lowercase').addEventListener('click', () => {
+        pushToHistory();
+        inputData.value = inputData.value.toLowerCase();
+        updateStats();
+    });
+
+    document.getElementById('btn-titlecase').addEventListener('click', () => {
+        pushToHistory();
+        inputData.value = inputData.value.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        updateStats();
+    });
+
+    document.getElementById('btn-copy-input').addEventListener('click', () => navigator.clipboard.writeText(inputData.value));
+    document.getElementById('btn-copy-output').addEventListener('click', () => navigator.clipboard.writeText(outputData.value));
+    
+    document.getElementById('btn-clear-input').addEventListener('click', () => {
+        pushToHistory();
+        inputData.value = '';
+        updateStats();
+    });
+    document.getElementById('btn-clear-output').addEventListener('click', () => {
+        pushToHistory();
+        outputData.value = '';
+        updateStats();
+    });
+
+    document.getElementById('font-increase').addEventListener('click', () => { if(currentFontSize < 24) { currentFontSize += 2; applyFontSize(); } });
+    document.getElementById('font-decrease').addEventListener('click', () => { if(currentFontSize > 10) { currentFontSize -= 2; applyFontSize(); } });
+    function applyFontSize() {
+        inputData.style.fontSize = currentFontSize + 'px';
+        outputData.style.fontSize = currentFontSize + 'px';
+        document.getElementById('font-size-indicator').innerText = currentFontSize + 'px';
+    }
+
+    excelFeature.addEventListener('change', function() {
+        findContainer.classList.remove('show-field');
+        prefixContainer.classList.remove('show-field');
+        delimiterContainer.classList.remove('show-field');
+        filterContainer.classList.remove('show-field');
+
+        if (this.value === 'replace') findContainer.classList.add('show-field');
+        else if (this.value === 'add-prefix-suffix') prefixContainer.classList.add('show-field');
+        else if (this.value === 'split-by-delimiter') delimiterContainer.classList.add('show-field');
+        else if (this.value === 'filter-contains') filterContainer.classList.add('show-field');
+    });
+
+    btnApply.addEventListener('click', function() {
+        if (!inputData.value) return;
+        pushToHistory();
+        
+        let rows = inputData.value.split('\n');
+        const feature = excelFeature.value;
+
+        if (feature === 'replace') rows = rows.map(row => row.replaceAll(findText.value, replaceText.value));
+        else if (feature === 'remove-duplicates') rows = [...new Set(rows)];
+        else if (feature === 'remove-empty') rows = rows.filter(row => row.trim() !== '');
+        else if (feature === 'sort-asc') rows.sort((a, b) => a.localeCompare(b, 'ar'));
+        else if (feature === 'sort-desc') rows.sort((a, b) => b.localeCompare(a, 'ar'));
+        else if (feature === 'extract-phones') {
+            const matches = inputData.value.match(/(01[0125]\d{8}|0\d{8,9})/g);
+            rows = matches ? matches : ['لم يتم العثور على أرقام.'];
+        } else if (feature === 'add-prefix-suffix') {
+            const p = document.getElementById('prefix-text').value;
+            const s = document.getElementById('suffix-text').value;
+            rows = rows.map(row => `${p}${row}${s}`);
+        } else if (feature === 'split-by-delimiter') {
+            const d = document.getElementById('delimiter-text').value || ',';
+            rows = inputData.value.split(d).map(item => item.trim());
+        } else if (feature === 'filter-contains') {
+            const term = document.getElementById('filter-text').value.toLowerCase();
+            rows = rows.filter(row => row.toLowerCase().includes(term));
+        } else if (feature === 'calc-sum') {
+            const numbers = rows.map(r => parseFloat(r.trim())).filter(n => !isNaN(n));
+            if(numbers.length === 0) {
+                rows = ['لا يوجد أرقام صالحة.'];
+            } else {
+                const sum = numbers.reduce((a, b) => a + b, 0);
+                rows = [
+                    `--- الإحصائيات الرقمية ---`,
+                    `المجموع: ${sum}`,
+                    `المتوسط: ${(sum / numbers.length).toFixed(2)}`,
+                    `أكبر قيمة: ${Math.max(...numbers)}`,
+                    `أصغر قيمة: ${Math.min(...numbers)}`,
+                    `العدد: ${numbers.length}`
+                ];
+            }
+        }
+
+        outputData.value = rows.join('\n');
+        updateStats();
+    });
+
+    document.getElementById('tb-undo').addEventListener('click', function() {
+        if (historyStack.length > 0) {
+            redoStack.push({ input: inputData.value, output: outputData.value });
+            const prev = historyStack.pop();
+            inputData.value = prev.input; 
+            outputData.value = prev.output;
+            updateStats();
+        }
+    });
+
+    document.getElementById('tb-redo').addEventListener('click', function() {
+        if (redoStack.length > 0) {
+            historyStack.push({ input: inputData.value, output: outputData.value });
+            const next = redoStack.pop();
+            inputData.value = next.input; 
+            outputData.value = next.output;
+            updateStats();
+        }
+    });
+
+    hiddenFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            pushToHistory();
+            inputData.value = evt.target.result;
+            updateStats();
+        };
+        reader.readAsText(file);
+    });
+</script>
+
+</body>
+</html>
